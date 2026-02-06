@@ -898,6 +898,46 @@
       setText("profile-avatar", (tgUser.first_name || "DL").slice(0, 2).toUpperCase());
     };
 
+    const normalizeNumber = (value) => {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isNaN(parsed)) {
+        return "—";
+      }
+      return parsed.toLocaleString("ru-RU");
+    };
+
+    const populateFromParams = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.toString()) {
+        return;
+      }
+
+      const connected = params.get("connected");
+      const activeUntil = params.get("active_until");
+      const username = params.get("username");
+      const name = params.get("name");
+      const avatar = params.get("avatar");
+      const userId = params.get("id");
+
+      if (username) {
+        setText("profile-username", `@${username.replace(/^@/, "")}`);
+      }
+      setText("profile-name", name);
+      setText("profile-id", userId);
+
+      if (avatar) {
+        setText("profile-avatar", avatar.slice(0, 2).toUpperCase());
+      }
+
+      const isActive = connected === "1";
+      setStatus({ isActive, activeUntil });
+
+      setText("stat-deleted", normalizeNumber(params.get("deleted")));
+      setText("stat-edited", normalizeNumber(params.get("edited")));
+      setText("stat-incoming", normalizeNumber(params.get("incoming")));
+      setText("stat-outgoing", normalizeNumber(params.get("outgoing")));
+    };
+
     const setupBilling = () => {
       const billingButton = document.getElementById("billing-button");
       if (!billingButton) {
@@ -914,6 +954,7 @@
     };
 
     populateFromWebApp();
+    populateFromParams();
     setupBilling();
   </script>
 </body>
