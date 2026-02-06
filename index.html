@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Инструкция подключения Delixor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f0f10;
+      --card: #1b1b1d;
+      --card-soft: #222326;
+      --text: #f5f5f5;
+      --muted: #c2c2c2;
+      --accent: #fdb919;
+      --accent-soft: rgba(253, 185, 25, 0.15);
+      --success: #37d67a;
+      --danger: #ff5c5c;
+      --border: rgba(255, 255, 255, 0.08);
+      --hero-bg: rgba(255, 255, 255, 0.06);
+      --surface: rgba(0, 0, 0, 0.35);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --bg: #f6f6f7;
+        --card: #ffffff;
+        --card-soft: #f0f0f3;
+        --text: #1b1b1f;
+        --muted: #5a5a66;
+        --accent: #f2b441;
+        --accent-soft: rgba(242, 180, 65, 0.18);
+        --success: #1c9c5a;
+        --danger: #d64545;
+        --border: rgba(0, 0, 0, 0.08);
+        --hero-bg: rgba(0, 0, 0, 0.04);
+        --surface: rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1a1a1a 0%, #0d0d0f 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px 60px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: -20% -10%;
+      z-index: -1;
+      background:
+        radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 60%),
+        radial-gradient(2px 2px at 80% 20%, rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0) 60%),
+        radial-gradient(1.5px 1.5px at 60% 70%, rgba(255, 255, 255, 0.6) 0, rgba(255, 255, 255, 0) 60%),
+        radial-gradient(2px 2px at 35% 80%, rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0) 60%),
+        radial-gradient(120px 120px at 15% 25%, rgba(253, 185, 25, 0.16) 0, rgba(253, 185, 25, 0) 70%),
+        radial-gradient(160px 160px at 85% 75%, rgba(120, 200, 255, 0.18) 0, rgba(120, 200, 255, 0) 70%);
+      animation: star-float 18s ease-in-out infinite;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    body::after {
+      animation-duration: 26s;
+      animation-delay: -6s;
+      opacity: 0.5;
+      filter: blur(0.5px);
+    }
+
+    @keyframes star-float {
+      0% {
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        transform: translateY(-2%) scale(1.02);
+      }
+      100% {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      color: var(--text);
+      z-index: 999;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .loader.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loader__card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px 24px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+      display: grid;
+      gap: 8px;
+      text-align: center;
+      width: min(320px, 90%);
+    }
+
+    .loader__title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .loader__subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .page {
+      width: min(640px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section__title {
+      font-size: 18px;
+    }
+
+    .hero {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 8px 8px 0;
+    }
+
+    .hero__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: var(--hero-bg);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .hero__eyebrow {
+      color: var(--muted);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .hero h1 {
+      font-size: clamp(24px, 4vw, 32px);
+      margin-bottom: 6px;
+    }
+
+    .hero__subtitle {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .profile-card {
+      display: grid;
+      gap: 16px;
+    }
+
+    .profile-header {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .profile-info {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(253, 185, 25, 0.3), rgba(120, 200, 255, 0.2));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    .profile-meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .profile-meta span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 10px rgba(255, 92, 92, 0.45);
+    }
+
+    .status-pill.is-active .status-dot {
+      background: var(--success);
+      box-shadow: 0 0 10px rgba(55, 214, 122, 0.45);
+    }
+
+    .status-pill.is-active span {
+      color: var(--success);
+    }
+
+    .quick-actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .action-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .action-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .action-card__meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .action-card__meta span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .action-card__icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .card h2 {
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .stat-card strong {
+      font-size: 22px;
+    }
+
+    .stat-card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-left: 18px;
+      color: var(--text);
+    }
+
+    .steps strong {
+      color: var(--text);
+    }
+
+    .callouts {
+      display: grid;
+      gap: 12px;
+    }
+
+    .callout {
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(246, 196, 83, 0.08);
+      border-left: 4px solid var(--accent);
+    }
+
+    .callout__icon {
+      font-size: 20px;
+    }
+
+    .callout__title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .features-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .feature-item {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      display: grid;
+      gap: 6px;
+    }
+
+    .feature-item span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .billing-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .billing-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .billing-option input {
+      accent-color: var(--accent);
+    }
+
+    .billing-option__meta {
+      display: grid;
+      gap: 4px;
+      font-size: 14px;
+    }
+
+    .billing-option__meta span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .billing-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .primary-button {
+      background: var(--accent);
+      color: #1b1b1f;
+      border: none;
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(253, 185, 25, 0.25);
+    }
+
+    .billing-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .billing-status__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+
+    .billing-status.is-active {
+      color: var(--success);
+    }
+
+    .billing-status.is-active .billing-status__dot {
+      background: var(--success);
+    }
+
+    .accordion {
+      display: grid;
+      gap: 12px;
+    }
+
+    .accordion__button {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 16px 18px;
+      border-radius: 16px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .accordion__button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .accordion__button.is-open .accordion__chevron {
+      transform: rotate(180deg);
+    }
+
+    .accordion__chevron {
+      transition: transform 0.25s ease;
+    }
+
+    .accordion__content {
+      display: grid;
+      grid-template-rows: 0fr;
+      overflow: hidden;
+      transition: grid-template-rows 0.42s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.24s ease;
+      opacity: 0.72;
+      background: var(--card-soft);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      will-change: grid-template-rows;
+      transform: translateZ(0);
+    }
+
+    .accordion__content.is-open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+    }
+
+    .accordion__inner {
+      overflow: hidden;
+      min-height: 0;
+      padding: 0 18px;
+      transform: translateY(-6px);
+      opacity: 0;
+      transition: transform 0.32s ease, opacity 0.28s ease, padding 0.22s ease;
+    }
+
+    .accordion__content.is-open .accordion__inner {
+      padding: 18px;
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .accordion__content,
+      .accordion__inner,
+      .accordion__chevron {
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .media-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .media-grid figure {
+      display: grid;
+      gap: 10px;
+      background: var(--surface);
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .media-grid img {
+      width: 100%;
+      border-radius: 12px;
+    }
+
+    .media-grid figcaption {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .video-wrapper {
+      display: grid;
+      gap: 12px;
+    }
+
+    .video-wrapper video {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #000;
+    }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background: radial-gradient(circle at top, #ffffff 0%, #e9e9ef 55%);
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(245, 245, 248, 0.9));
+        box-shadow: 0 18px 40px rgba(15, 15, 20, 0.08);
+      }
+
+      .accordion__button {
+        background: var(--card);
+      }
+
+      .video-wrapper video {
+        background: #e6e6ea;
+      }
+    }
+
+    .video-note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .card,
+      .accordion__button,
+      .action-card {
+        border-radius: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loader" id="loader" aria-live="polite">
+    <div class="loader__card">
+      <div class="loader__title">Загрузка мини‑приложения…</div>
+      <div class="loader__subtitle">Пожалуйста, подождите пару секунд.</div>
+    </div>
+  </div>
+  <main class="page">
+    <header class="hero">
+      <div class="hero__icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2.5L16.2 8.4L22 10.7L16.2 13L14 18.9L11.8 13L6 10.7L11.8 8.4L14 2.5Z" fill="#F6C453"/>
+          <path d="M21.5 17.5L22.6 20.5L25.5 21.6L22.6 22.7L21.5 25.7L20.4 22.7L17.5 21.6L20.4 20.5L21.5 17.5Z" fill="#FFFFFF" opacity="0.8"/>
+        </svg>
+      </div>
+      <div>
+        <p class="hero__eyebrow">Delixor Mini‑app</p>
+        <h1>Панель управления Delixor</h1>
+        <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
+      </div>
+    </header>
+
+    <section class="card profile-card" id="home">
+      <div class="profile-header">
+        <div class="profile-info">
+          <div class="profile-avatar" id="profile-avatar">DL</div>
+          <div class="profile-meta">
+            <strong id="profile-username">@delixor_user</strong>
+            <span>Telegram ID: <span id="profile-id">148 902 551</span></span>
+            <span>Имя: <span id="profile-name">Дарья Л.</span></span>
+          </div>
+        </div>
+        <div class="status-pill is-active" id="connection-status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="connection-label">Подключён</span>
+        </div>
+      </div>
+      <div class="quick-actions">
+        <a class="action-card" href="#instruction">
+          <div class="action-card__meta">
+            <strong>Инструкция по подключению</strong>
+            <span>Пошаговое подключение DelixorBot</span>
+          </div>
+          <div class="action-card__icon">📎</div>
+        </a>
+        <a class="action-card" href="#features">
+          <div class="action-card__meta">
+            <strong>Возможности бота</strong>
+            <span>Сохранение удаленных и изменённых сообщений</span>
+          </div>
+          <div class="action-card__icon">✨</div>
+        </a>
+        <a class="action-card" href="#billing">
+          <div class="action-card__meta">
+            <strong>Оплата подписки</strong>
+            <span>Выберите период и оплатите звёздами</span>
+          </div>
+          <div class="action-card__icon">⭐</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="card section" id="stats">
+      <h2 class="section__title">Статистика сообщений</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <strong id="stat-deleted">2 481</strong>
+          <span>Сохранено удалённых</span>
+        </div>
+        <div class="stat-card">
+          <strong id="stat-edited">1 175</strong>
+          <span>Изменённых сообщений</span>
+        </div>
+        <div class="stat-card">
+          <strong id="stat-incoming">3 112</strong>
+          <span>Входящие сохранения</span>
+        </div>
+        <div class="stat-card">
+          <strong id="stat-outgoing">980</strong>
+          <span>Исходящие сохранения</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section" id="billing">
+      <h2 class="section__title">Оплата и подписка</h2>
+      <div class="billing-grid">
+        <label class="billing-option">
+          <div class="billing-option__meta">
+            <strong>1 месяц</strong>
+            <span>250 ⭐ — пробный доступ</span>
+          </div>
+          <input type="radio" name="plan" checked />
+        </label>
+        <label class="billing-option">
+          <div class="billing-option__meta">
+            <strong>3 месяца</strong>
+            <span>690 ⭐ — выгоднее на 8%</span>
+          </div>
+          <input type="radio" name="plan" />
+        </label>
+        <label class="billing-option">
+          <div class="billing-option__meta">
+            <strong>12 месяцев</strong>
+            <span>2 200 ⭐ — лучший выбор</span>
+          </div>
+          <input type="radio" name="plan" />
+        </label>
+      </div>
+      <div class="billing-actions">
+        <a class="primary-button" id="billing-button" href="https://t.me/DelixorBot?start=pay">Оплатить через бота ⭐</a>
+        <div class="billing-status is-active" id="billing-status">
+          <span class="billing-status__dot" aria-hidden="true"></span>
+          <span id="billing-status-label">Подписка активна до 12.05.2025</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section" id="features">
+      <h2 class="section__title">Возможности Delixor</h2>
+      <div class="features-grid">
+        <div class="feature-item">
+          <strong>История удалённых сообщений</strong>
+          <span>Сохраняем то, что исчезло в чатах и каналах.</span>
+        </div>
+        <div class="feature-item">
+          <strong>Фиксация изменений</strong>
+          <span>Показываем, как редактировали сообщения.</span>
+        </div>
+        <div class="feature-item">
+          <strong>Умные уведомления</strong>
+          <span>Оповещаем о важных событиях и изменениях.</span>
+        </div>
+        <div class="feature-item">
+          <strong>Экспорт истории</strong>
+          <span>Отправка отчётов в удобном формате.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section" id="instruction">
+      <h2 class="section__title">Инструкция по подключению</h2>
+      <ol class="steps">
+        <li>Откройте <strong>Настройки</strong> в Telegram.</li>
+        <li>Перейдите в раздел <strong>Telegram для бизнеса</strong>.</li>
+        <li>Выберите <strong>Чат-боты</strong> и введите <strong>DelixorBot</strong>.</li>
+        <li>Нажмите <strong>Добавить</strong> для подключения</li>
+        <li>В разрешениях отметьте все пункты раздела <strong>Сообщения</strong>.</li>
+      </ol>
+      <div class="callouts">
+        <div class="callout">
+          <span class="callout__icon">💫</span>
+          <div>
+            <p class="callout__title">Проверьте разрешения</p>
+            <p>Включите все пункты раздела «Сообщения» (5 из 5).</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout__icon">💎</span>
+          <div>
+            <p class="callout__title">Нужен Telegram Premium</p>
+            <p>Подключение доступно только с активной подпиской.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="accordion">
+      <button class="accordion__button" type="button" data-target="screenshots">
+        <span>📙 Показать скриншоты</span>
+        <span class="accordion__chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="accordion__content" id="screenshots">
+        <div class="accordion__inner">
+          <div class="media-grid">
+            <figure>
+              <img alt="Скриншот шага 1" src="https://storage.yandexcloud.net/fotora.ru/90da9397b1ab24af.jpeg" />
+              <figcaption>Шаг 1. Открываем настройки и раздел Telegram для бизнеса.</figcaption>
+            </figure>
+            <figure>
+              <img alt="Скриншот разрешений" src="https://storage.yandexcloud.net/fotora.ru/70db23a1bb5e2fea.jpeg" />
+              <figcaption>Шаг 2. Выберите раздел «Чат-боты».</figcaption>
+            </figure>
+            <figure>
+              <img alt="Скриншот завершения" src="https://storage.yandexcloud.net/fotora.ru/58ce88e582faa8ca.jpeg" />
+              <figcaption>Шаг 3. Введите в поле DelixorBot и нажмите «Добавить».</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+
+      <button class="accordion__button" type="button" data-target="video">
+        <span>🛠 Показать видео</span>
+        <span class="accordion__chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="accordion__content" id="video">
+        <div class="accordion__inner">
+          <div class="video-wrapper">
+            <video controls preload="metadata" poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'><defs><linearGradient id='poster' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%231f1f1f'/><stop offset='100%25' stop-color='%232d2d2d'/></linearGradient></defs><rect width='640' height='360' rx='24' fill='url(%23poster)'/><text x='64' y='190' fill='%23F5F5F5' font-family='Arial, sans-serif' font-size='24' font-weight='700'>Видео-инструкция</text></svg>">
+              <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4" />
+              Ваш браузер не поддерживает видео. Скачайте файл по ссылке выше.
+            </video>
+            <p class="video-note">Посмотрите видео-инструкцию по подключению DelixorBot.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.addEventListener("load", () => {
+      const loader = document.getElementById("loader");
+      if (loader) {
+        loader.classList.add("is-hidden");
+      }
+    });
+
+    const buttons = document.querySelectorAll(".accordion__button");
+
+    const toggleSection = (button) => {
+      const targetId = button.getAttribute("data-target");
+      const content = document.getElementById(targetId);
+      const isOpen = content.classList.contains("is-open");
+
+      if (isOpen) {
+        content.classList.remove("is-open");
+        button.classList.remove("is-open");
+        return;
+      }
+
+      content.classList.add("is-open");
+      button.classList.add("is-open");
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => toggleSection(button));
+    });
+
+    const normalizeNumber = (value, fallback) => {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isNaN(parsed)) {
+        return fallback;
+      }
+      return parsed.toLocaleString("ru-RU");
+    };
+
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el && value) {
+        el.textContent = value;
+      }
+    };
+
+    const setStatus = ({ isActive, activeUntil }) => {
+      const status = document.getElementById("connection-status");
+      const label = document.getElementById("connection-label");
+      if (status && label) {
+        status.classList.toggle("is-active", isActive);
+        label.textContent = isActive ? "Подключён" : "Не подключен";
+      }
+
+      const billingStatus = document.getElementById("billing-status");
+      const billingLabel = document.getElementById("billing-status-label");
+      if (billingStatus && billingLabel) {
+        billingStatus.classList.toggle("is-active", isActive);
+        billingLabel.textContent = isActive
+          ? `Подписка активна до ${activeUntil || "неизвестно"}`
+          : "Подписка не активна";
+      }
+    };
+
+    const populateFromWebApp = () => {
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (!tgUser) {
+        return;
+      }
+
+      const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ");
+      setText("profile-name", name || "Без имени");
+      setText("profile-username", tgUser.username ? `@${tgUser.username}` : "Без username");
+      setText("profile-id", `${tgUser.id}`);
+      setText("profile-avatar", (tgUser.first_name || "DL").slice(0, 2).toUpperCase());
+    };
+
+    const populateFromParams = () => {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get("status");
+      const activeUntil = params.get("active_until");
+
+      setText("profile-username", params.get("username"));
+      setText("profile-id", params.get("user_id"));
+      setText("profile-name", params.get("name"));
+      setText("profile-avatar", params.get("avatar"));
+
+      setText("stat-deleted", normalizeNumber(params.get("deleted"), "2 481"));
+      setText("stat-edited", normalizeNumber(params.get("edited"), "1 175"));
+      setText("stat-incoming", normalizeNumber(params.get("incoming"), "3 112"));
+      setText("stat-outgoing", normalizeNumber(params.get("outgoing"), "980"));
+
+      if (status) {
+        setStatus({ isActive: status === "active", activeUntil });
+      } else {
+        setStatus({ isActive: true, activeUntil });
+      }
+    };
+
+    const setupBilling = () => {
+      const billingButton = document.getElementById("billing-button");
+      if (!billingButton) {
+        return;
+      }
+      billingButton.addEventListener("click", (event) => {
+        const tg = window.Telegram?.WebApp;
+        if (!tg) {
+          return;
+        }
+        event.preventDefault();
+        tg.openTelegramLink(billingButton.href);
+      });
+    };
+
+    populateFromWebApp();
+    populateFromParams();
+    setupBilling();
+  </script>
+</body>
+</html>
