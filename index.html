@@ -642,16 +642,16 @@
     <section class="card profile-card" id="home">
       <div class="profile-header">
         <div class="profile-info">
-          <div class="profile-avatar" id="profile-avatar">DL</div>
+          <div class="profile-avatar" id="profile-avatar">—</div>
           <div class="profile-meta">
-            <strong id="profile-username">@delixor_user</strong>
-            <span>Telegram ID: <span id="profile-id">148 902 551</span></span>
-            <span>Имя: <span id="profile-name">Дарья Л.</span></span>
+            <strong id="profile-username">Неизвестно</strong>
+            <span>Telegram ID: <span id="profile-id">—</span></span>
+            <span>Имя: <span id="profile-name">—</span></span>
           </div>
         </div>
-        <div class="status-pill is-active" id="connection-status">
+        <div class="status-pill" id="connection-status">
           <span class="status-dot" aria-hidden="true"></span>
-          <span id="connection-label">Подключён</span>
+          <span id="connection-label">Не подключен</span>
         </div>
       </div>
       <div class="quick-actions">
@@ -683,19 +683,19 @@
       <h2 class="section__title">Статистика сообщений</h2>
       <div class="stats-grid">
         <div class="stat-card">
-          <strong id="stat-deleted">2 481</strong>
+          <strong id="stat-deleted">—</strong>
           <span>Сохранено удалённых</span>
         </div>
         <div class="stat-card">
-          <strong id="stat-edited">1 175</strong>
+          <strong id="stat-edited">—</strong>
           <span>Изменённых сообщений</span>
         </div>
         <div class="stat-card">
-          <strong id="stat-incoming">3 112</strong>
+          <strong id="stat-incoming">—</strong>
           <span>Входящие сохранения</span>
         </div>
         <div class="stat-card">
-          <strong id="stat-outgoing">980</strong>
+          <strong id="stat-outgoing">—</strong>
           <span>Исходящие сохранения</span>
         </div>
       </div>
@@ -728,9 +728,9 @@
       </div>
       <div class="billing-actions">
         <a class="primary-button" id="billing-button" href="https://t.me/DelixorBot?start=pay">Оплатить через бота ⭐</a>
-        <div class="billing-status is-active" id="billing-status">
+        <div class="billing-status" id="billing-status">
           <span class="billing-status__dot" aria-hidden="true"></span>
-          <span id="billing-status-label">Подписка активна до 12.05.2025</span>
+          <span id="billing-status-label">Подписка не активна</span>
         </div>
       </div>
     </section>
@@ -855,17 +855,9 @@
       button.addEventListener("click", () => toggleSection(button));
     });
 
-    const normalizeNumber = (value, fallback) => {
-      const parsed = Number.parseInt(value, 10);
-      if (Number.isNaN(parsed)) {
-        return fallback;
-      }
-      return parsed.toLocaleString("ru-RU");
-    };
-
     const setText = (id, value) => {
       const el = document.getElementById(id);
-      if (el && value) {
+      if (el && value !== undefined && value !== null && value !== "") {
         el.textContent = value;
       }
     };
@@ -890,6 +882,11 @@
 
     const populateFromWebApp = () => {
       const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+      }
+
       if (!tgUser) {
         return;
       }
@@ -899,28 +896,6 @@
       setText("profile-username", tgUser.username ? `@${tgUser.username}` : "Без username");
       setText("profile-id", `${tgUser.id}`);
       setText("profile-avatar", (tgUser.first_name || "DL").slice(0, 2).toUpperCase());
-    };
-
-    const populateFromParams = () => {
-      const params = new URLSearchParams(window.location.search);
-      const status = params.get("status");
-      const activeUntil = params.get("active_until");
-
-      setText("profile-username", params.get("username"));
-      setText("profile-id", params.get("user_id"));
-      setText("profile-name", params.get("name"));
-      setText("profile-avatar", params.get("avatar"));
-
-      setText("stat-deleted", normalizeNumber(params.get("deleted"), "2 481"));
-      setText("stat-edited", normalizeNumber(params.get("edited"), "1 175"));
-      setText("stat-incoming", normalizeNumber(params.get("incoming"), "3 112"));
-      setText("stat-outgoing", normalizeNumber(params.get("outgoing"), "980"));
-
-      if (status) {
-        setStatus({ isActive: status === "active", activeUntil });
-      } else {
-        setStatus({ isActive: true, activeUntil });
-      }
     };
 
     const setupBilling = () => {
@@ -939,7 +914,6 @@
     };
 
     populateFromWebApp();
-    populateFromParams();
     setupBilling();
   </script>
 </body>
