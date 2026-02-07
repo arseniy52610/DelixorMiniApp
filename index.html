@@ -807,21 +807,21 @@
             <strong>1 месяц</strong>
             <span>250 ⭐ — пробный доступ</span>
           </div>
-          <input type="radio" name="plan" checked />
+          <input type="radio" name="plan" value="pay_month" checked />
         </label>
         <label class="billing-option">
           <div class="billing-option__meta">
             <strong>3 месяца</strong>
             <span>690 ⭐ — выгоднее на 8%</span>
           </div>
-          <input type="radio" name="plan" />
+          <input type="radio" name="plan" value="pay_quarter" />
         </label>
         <label class="billing-option">
           <div class="billing-option__meta">
             <strong>12 месяцев</strong>
             <span>2 200 ⭐ — лучший выбор</span>
           </div>
-          <input type="radio" name="plan" />
+          <input type="radio" name="plan" value="pay_year" />
         </label>
       </div>
       <div class="billing-actions">
@@ -1076,6 +1076,15 @@
       if (!billingButton) {
         return;
       }
+      const updateBillingLink = () => {
+        const selected = document.querySelector('input[name="plan"]:checked');
+        const plan = selected?.value || "pay_month";
+        billingButton.href = `https://t.me/DelixorBot?start=${plan}`;
+      };
+      document.querySelectorAll('input[name="plan"]').forEach((input) => {
+        input.addEventListener("change", updateBillingLink);
+      });
+      updateBillingLink();
       billingButton.addEventListener("click", (event) => {
         const tg = window.Telegram?.WebApp;
         if (!tg) {
