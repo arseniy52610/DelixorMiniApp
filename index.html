@@ -111,25 +111,67 @@
     }
 
     .loader__card {
-      background: var(--card);
+      background: rgba(27, 27, 29, 0.72);
       border: 1px solid var(--border);
       border-radius: 18px;
-      padding: 20px 24px;
+      padding: 24px;
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
       display: grid;
-      gap: 8px;
+      place-items: center;
+      gap: 12px;
       text-align: center;
       width: min(320px, 90%);
+      backdrop-filter: blur(18px);
     }
 
-    .loader__title {
-      font-size: 18px;
-      font-weight: 600;
+    .loader__spinner {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-top-color: var(--accent);
+      animation: spin 1s linear infinite;
+      box-shadow: 0 10px 24px rgba(253, 185, 25, 0.2);
     }
 
-    .loader__subtitle {
-      color: var(--muted);
-      font-size: 14px;
+    .loader__dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .loader__dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.3;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .loader__dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .loader__dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+      50% {
+        opacity: 0.9;
+        transform: translateY(-4px);
+      }
     }
 
     .page {
@@ -274,8 +316,9 @@
       align-items: center;
       padding: 16px 18px;
       border-radius: 16px;
-      background: var(--card);
+      background: rgba(27, 27, 29, 0.72);
       border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
       text-decoration: none;
       color: inherit;
       transition: transform 0.2s ease, border-color 0.2s ease;
@@ -306,11 +349,12 @@
     }
 
     .card {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
       border-radius: 20px;
       padding: 24px;
       border: 1px solid var(--border);
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(18px);
     }
 
     .card h2 {
@@ -325,12 +369,13 @@
     }
 
     .stat-card {
-      background: var(--card);
+      background: rgba(27, 27, 29, 0.72);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
       display: grid;
       gap: 6px;
+      backdrop-filter: blur(16px);
     }
 
     .stat-card strong {
@@ -364,8 +409,9 @@
       gap: 12px;
       padding: 14px 16px;
       border-radius: 14px;
-      background: rgba(246, 196, 83, 0.08);
+      background: rgba(246, 196, 83, 0.12);
       border-left: 4px solid var(--accent);
+      backdrop-filter: blur(12px);
     }
 
     .callout__icon {
@@ -386,9 +432,10 @@
       padding: 16px;
       border-radius: 16px;
       border: 1px solid var(--border);
-      background: var(--card);
+      background: rgba(27, 27, 29, 0.72);
       display: grid;
       gap: 6px;
+      backdrop-filter: blur(18px);
     }
 
     .feature-item span {
@@ -409,7 +456,8 @@
       padding: 14px 16px;
       border-radius: 14px;
       border: 1px solid var(--border);
-      background: var(--card);
+      background: rgba(27, 27, 29, 0.72);
+      backdrop-filter: blur(18px);
     }
 
     .billing-option input {
@@ -499,7 +547,7 @@
 
     .accordion__button {
       width: 100%;
-      background: var(--card);
+      background: rgba(27, 27, 29, 0.72);
       border: 1px solid var(--border);
       color: var(--text);
       padding: 16px 18px;
@@ -510,6 +558,7 @@
       justify-content: space-between;
       cursor: pointer;
       transition: transform 0.2s ease, border-color 0.2s ease;
+      backdrop-filter: blur(18px);
     }
 
     .accordion__button:hover {
@@ -531,11 +580,12 @@
       overflow: hidden;
       transition: grid-template-rows 0.42s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.24s ease;
       opacity: 0.72;
-      background: var(--card-soft);
+      background: rgba(34, 35, 38, 0.72);
       border-radius: 16px;
       border: 1px solid var(--border);
       will-change: grid-template-rows;
       transform: translateZ(0);
+      backdrop-filter: blur(18px);
     }
 
     .accordion__content.is-open {
@@ -627,6 +677,18 @@
     }
 
     @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card {
+        padding: 12px;
+      }
+
+      .stat-card strong {
+        font-size: 18px;
+      }
+
       .hero {
         flex-direction: column;
         align-items: flex-start;
@@ -648,8 +710,12 @@
 <body>
   <div class="loader" id="loader" aria-live="polite">
     <div class="loader__card">
-      <div class="loader__title">Загрузка мини‑приложения…</div>
-      <div class="loader__subtitle">Пожалуйста, подождите пару секунд.</div>
+      <div class="loader__spinner" aria-hidden="true"></div>
+      <div class="loader__dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
     </div>
   </div>
   <main class="page">
