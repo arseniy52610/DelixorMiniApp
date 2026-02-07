@@ -62,7 +62,7 @@
       content: "";
       position: fixed;
       inset: -20% -10%;
-      z-index: -1;
+      z-index: -2;
       background:
         radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 60%),
         radial-gradient(2px 2px at 80% 20%, rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0) 60%),
@@ -179,6 +179,8 @@
       display: flex;
       flex-direction: column;
       gap: 24px;
+      position: relative;
+      z-index: 1;
     }
 
     .section {
@@ -662,6 +664,16 @@
         box-shadow: 0 18px 40px rgba(15, 15, 20, 0.08);
       }
 
+      .loader__card,
+      .action-card,
+      .stat-card,
+      .feature-item,
+      .billing-option,
+      .accordion__button,
+      .accordion__content {
+        background: rgba(255, 255, 255, 0.78);
+      }
+
       .accordion__button {
         background: var(--card);
       }
@@ -1079,7 +1091,7 @@
       const updateBillingLink = () => {
         const selected = document.querySelector('input[name="plan"]:checked');
         const plan = selected?.value || "pay_month";
-        billingButton.href = `https://t.me/testing_lirikoww_bot?start=${plan}`;
+        billingButton.href = `https://t.me/DelixorBot?start=${plan}`;
       };
       document.querySelectorAll('input[name="plan"]').forEach((input) => {
         input.addEventListener("change", updateBillingLink);
@@ -1092,6 +1104,9 @@
         }
         event.preventDefault();
         tg.openTelegramLink(billingButton.href);
+        if (typeof tg.close === "function") {
+          tg.close();
+        }
       });
     };
 
