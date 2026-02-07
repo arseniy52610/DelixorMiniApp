@@ -1091,7 +1091,7 @@
       const updateBillingLink = () => {
         const selected = document.querySelector('input[name="plan"]:checked');
         const plan = selected?.value || "pay_month";
-        billingButton.href = `https://t.me/DelixorBot?start=${plan}`;
+        billingButton.href = `https://t.me/testing_lirikoww_bot?start=${plan}`;
       };
       document.querySelectorAll('input[name="plan"]').forEach((input) => {
         input.addEventListener("change", updateBillingLink);
@@ -1121,4 +1121,5 @@
   </script>
 </body>
 </html>
+
 
