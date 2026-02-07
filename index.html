@@ -760,7 +760,7 @@
         </div>
         <div>
           <p class="hero__eyebrow">Delixor Mini‑app</p>
-          <h1>Панель управления Delixor v3</h1>
+          <h1>Панель управления Delixor v3.1</h1>
           <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
         </div>
       </header>
@@ -856,7 +856,7 @@
         </label>
       </div>
       <div class="billing-actions">
-        <a class="primary-button" id="billing-button" href="https://t.me/DelixorBot?start=pay">Оплатить через бота ⭐</a>
+        <a class="primary-button" id="billing-button" href="https://t.me/testing_lirikoww_bot?start=pay">Оплатить через бота ⭐</a>
         <div class="billing-hint" id="billing-hint">Открываем чат с ботом…</div>
         <div class="billing-status" id="billing-status">
           <span class="billing-status__dot" aria-hidden="true"></span>
@@ -1117,7 +1117,7 @@
         billingHint.classList.add("is-visible");
         setTimeout(() => {
           billingHint.classList.remove("is-visible");
-        }, 2500);
+        }, 10000);
       };
       const updateBillingLink = () => {
         const selected = document.querySelector('input[name="plan"]:checked');
@@ -1145,7 +1145,7 @@
         setTimeout(() => {
           billingButton.textContent = defaultLabel;
           billingButton.classList.remove("is-sent");
-        }, 2500);
+        }, 10000);
       });
     };
 
