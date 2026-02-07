@@ -501,6 +501,12 @@
       box-shadow: 0 12px 24px rgba(253, 185, 25, 0.25);
     }
 
+    .primary-button.is-sent {
+      opacity: 0.6;
+      transform: none;
+      box-shadow: none;
+    }
+
     .billing-status {
       display: inline-flex;
       align-items: center;
@@ -837,7 +843,7 @@
         </label>
       </div>
       <div class="billing-actions">
-        <a class="primary-button" id="billing-button" href="https://t.me/testing_lirikoww_bot?start=pay">Оплатить через бота ⭐</a>
+        <a class="primary-button" id="billing-button" href="https://t.me/DelixorBot?start=pay">Оплатить через бота ⭐</a>
         <div class="billing-status" id="billing-status">
           <span class="billing-status__dot" aria-hidden="true"></span>
           <span id="billing-status-label">Подписка не активна</span>
@@ -1088,6 +1094,7 @@
       if (!billingButton) {
         return;
       }
+      const defaultLabel = billingButton.textContent;
       const updateBillingLink = () => {
         const selected = document.querySelector('input[name="plan"]:checked');
         const plan = selected?.value || "pay_month";
@@ -1107,6 +1114,12 @@
         if (typeof tg.close === "function") {
           tg.close();
         }
+        billingButton.textContent = "Перейдите в бота";
+        billingButton.classList.add("is-sent");
+        setTimeout(() => {
+          billingButton.textContent = defaultLabel;
+          billingButton.classList.remove("is-sent");
+        }, 2500);
       });
     };
 
@@ -1121,5 +1134,3 @@
   </script>
 </body>
 </html>
-
-
