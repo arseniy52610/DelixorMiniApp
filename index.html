@@ -149,6 +149,16 @@
       font-size: 18px;
     }
 
+    .view {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .view.is-active {
+      display: flex;
+    }
+
     .hero {
       display: flex;
       gap: 16px;
@@ -464,6 +474,24 @@
       background: var(--success);
     }
 
+    .billing-meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      color: var(--text);
+    }
+
     .accordion {
       display: grid;
       gap: 12px;
@@ -625,21 +653,22 @@
     </div>
   </div>
   <main class="page">
-    <header class="hero">
-      <div class="hero__icon" aria-hidden="true">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M14 2.5L16.2 8.4L22 10.7L16.2 13L14 18.9L11.8 13L6 10.7L11.8 8.4L14 2.5Z" fill="#F6C453"/>
-          <path d="M21.5 17.5L22.6 20.5L25.5 21.6L22.6 22.7L21.5 25.7L20.4 22.7L17.5 21.6L20.4 20.5L21.5 17.5Z" fill="#FFFFFF" opacity="0.8"/>
-        </svg>
-      </div>
-      <div>
-        <p class="hero__eyebrow">Delixor Mini‑app</p>
-        <h1>Панель управления Delixor</h1>
-        <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
-      </div>
-    </header>
+    <div class="view is-active" id="view-home">
+      <header class="hero">
+        <div class="hero__icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2.5L16.2 8.4L22 10.7L16.2 13L14 18.9L11.8 13L6 10.7L11.8 8.4L14 2.5Z" fill="#F6C453"/>
+            <path d="M21.5 17.5L22.6 20.5L25.5 21.6L22.6 22.7L21.5 25.7L20.4 22.7L17.5 21.6L20.4 20.5L21.5 17.5Z" fill="#FFFFFF" opacity="0.8"/>
+          </svg>
+        </div>
+        <div>
+          <p class="hero__eyebrow">Delixor Mini‑app</p>
+          <h1>Панель управления Delixor</h1>
+          <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
+        </div>
+      </header>
 
-    <section class="card profile-card" id="home">
+      <section class="card profile-card" id="home">
       <div class="profile-header">
         <div class="profile-info">
           <div class="profile-avatar" id="profile-avatar">—</div>
@@ -700,8 +729,11 @@
         </div>
       </div>
     </section>
+    </div>
 
-    <section class="card section" id="billing">
+    <div class="view" id="view-billing">
+      <a class="back-link" href="#home">← Назад на главную</a>
+      <section class="card section" id="billing">
       <h2 class="section__title">Оплата и подписка</h2>
       <div class="billing-grid">
         <label class="billing-option">
@@ -732,10 +764,14 @@
           <span class="billing-status__dot" aria-hidden="true"></span>
           <span id="billing-status-label">Подписка не активна</span>
         </div>
+        <div class="billing-meta">Дата окончания: <span id="billing-end-date">—</span></div>
       </div>
-    </section>
+      </section>
+    </div>
 
-    <section class="card section" id="features">
+    <div class="view" id="view-features">
+      <a class="back-link" href="#home">← Назад на главную</a>
+      <section class="card section" id="features">
       <h2 class="section__title">Возможности Delixor</h2>
       <div class="features-grid">
         <div class="feature-item">
@@ -755,9 +791,12 @@
           <span>Отправка отчётов в удобном формате.</span>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
 
-    <section class="card section" id="instruction">
+    <div class="view" id="view-instruction">
+      <a class="back-link" href="#home">← Назад на главную</a>
+      <section class="card section" id="instruction">
       <h2 class="section__title">Инструкция по подключению</h2>
       <ol class="steps">
         <li>Откройте <strong>Настройки</strong> в Telegram.</li>
@@ -782,9 +821,9 @@
           </div>
         </div>
       </div>
-    </section>
+      </section>
 
-    <section class="accordion">
+      <section class="accordion">
       <button class="accordion__button" type="button" data-target="screenshots">
         <span>📙 Показать скриншоты</span>
         <span class="accordion__chevron" aria-hidden="true">▾</span>
@@ -823,7 +862,8 @@
           </div>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   </main>
 
   <script>
@@ -872,11 +912,15 @@
 
       const billingStatus = document.getElementById("billing-status");
       const billingLabel = document.getElementById("billing-status-label");
+      const billingEnd = document.getElementById("billing-end-date");
       if (billingStatus && billingLabel) {
         billingStatus.classList.toggle("is-active", isActive);
         billingLabel.textContent = isActive
           ? `Подписка активна до ${activeUntil || "неизвестно"}`
           : "Подписка не активна";
+      }
+      if (billingEnd) {
+        billingEnd.textContent = activeUntil || "—";
       }
     };
 
@@ -938,6 +982,29 @@
       setText("stat-outgoing", normalizeNumber(params.get("outgoing")));
     };
 
+    const setActiveView = (viewId) => {
+      document.querySelectorAll(".view").forEach((view) => {
+        view.classList.toggle("is-active", view.id === viewId);
+      });
+    };
+
+    const getViewFromHash = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (!hash || hash === "home") {
+        return "view-home";
+      }
+      if (hash === "billing") {
+        return "view-billing";
+      }
+      if (hash === "features") {
+        return "view-features";
+      }
+      if (hash === "instruction") {
+        return "view-instruction";
+      }
+      return "view-home";
+    };
+
     const setupBilling = () => {
       const billingButton = document.getElementById("billing-button");
       if (!billingButton) {
@@ -956,6 +1023,11 @@
     populateFromWebApp();
     populateFromParams();
     setupBilling();
+
+    setActiveView(getViewFromHash());
+    window.addEventListener("hashchange", () => {
+      setActiveView(getViewFromHash());
+    });
   </script>
 </body>
 </html>
