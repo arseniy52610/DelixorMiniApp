@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Инструкция подключения Delixor v2</title>
+  <title>Инструкция подключения Delixor</title>
   <style>
     :root {
       color-scheme: dark;
@@ -507,6 +507,19 @@
       box-shadow: none;
     }
 
+    .billing-hint {
+      font-size: 13px;
+      color: var(--muted);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .billing-hint.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     .billing-status {
       display: inline-flex;
       align-items: center;
@@ -747,7 +760,7 @@
         </div>
         <div>
           <p class="hero__eyebrow">Delixor Mini‑app</p>
-          <h1>Панель управления Delixor v2</h1>
+          <h1>Панель управления Delixor v3</h1>
           <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
         </div>
       </header>
@@ -844,6 +857,7 @@
       </div>
       <div class="billing-actions">
         <a class="primary-button" id="billing-button" href="https://t.me/DelixorBot?start=pay">Оплатить через бота ⭐</a>
+        <div class="billing-hint" id="billing-hint">Открываем чат с ботом…</div>
         <div class="billing-status" id="billing-status">
           <span class="billing-status__dot" aria-hidden="true"></span>
           <span id="billing-status-label">Подписка не активна</span>
@@ -1091,10 +1105,20 @@
 
     const setupBilling = () => {
       const billingButton = document.getElementById("billing-button");
+      const billingHint = document.getElementById("billing-hint");
       if (!billingButton) {
         return;
       }
       const defaultLabel = billingButton.textContent;
+      const showBillingHint = () => {
+        if (!billingHint) {
+          return;
+        }
+        billingHint.classList.add("is-visible");
+        setTimeout(() => {
+          billingHint.classList.remove("is-visible");
+        }, 2500);
+      };
       const updateBillingLink = () => {
         const selected = document.querySelector('input[name="plan"]:checked');
         const plan = selected?.value || "pay_month";
@@ -1106,16 +1130,18 @@
       updateBillingLink();
       billingButton.addEventListener("click", (event) => {
         const tg = window.Telegram?.WebApp;
-        if (!tg) {
-          return;
-        }
         event.preventDefault();
-        tg.openTelegramLink(billingButton.href);
-        if (typeof tg.close === "function") {
-          tg.close();
-        }
         billingButton.textContent = "Перейдите в бота";
         billingButton.classList.add("is-sent");
+        showBillingHint();
+        if (tg) {
+          tg.openTelegramLink(billingButton.href);
+          if (typeof tg.close === "function") {
+            tg.close();
+          }
+        } else {
+          window.location.href = billingButton.href;
+        }
         setTimeout(() => {
           billingButton.textContent = defaultLabel;
           billingButton.classList.remove("is-sent");
@@ -1134,5 +1160,3 @@
   </script>
 </body>
 </html>
-
-
