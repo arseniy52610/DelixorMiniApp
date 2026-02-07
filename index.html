@@ -760,8 +760,8 @@
           </svg>
         </div>
         <div>
-          <p class="hero__eyebrow">Delixor Mini‑app</p>
-          <h1>Панель управления Delixor v3.3</h1>
+          <p class="hero__eyebrow"></p>
+          <h1>Delixor - мод на Telegram</h1>
           <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
         </div>
       </header>
@@ -837,27 +837,27 @@
         <label class="billing-option">
           <div class="billing-option__meta">
             <strong>1 месяц</strong>
-            <span>250 ⭐ — пробный доступ</span>
+            <span>100 ⭐ — пробный доступ</span>
           </div>
           <input type="radio" name="plan" value="pay_month" checked />
         </label>
         <label class="billing-option">
           <div class="billing-option__meta">
             <strong>3 месяца</strong>
-            <span>690 ⭐ — выгоднее на 8%</span>
+            <span>270 ⭐ — выгоднее на 8%</span>
           </div>
           <input type="radio" name="plan" value="pay_quarter" />
         </label>
         <label class="billing-option">
           <div class="billing-option__meta">
             <strong>12 месяцев</strong>
-            <span>2 200 ⭐ — лучший выбор</span>
+            <span>1 000 ⭐ — лучший выбор</span>
           </div>
           <input type="radio" name="plan" value="pay_year" />
         </label>
       </div>
       <div class="billing-actions">
-        <a class="primary-button" id="billing-button" href="https://t.me/testing_lirikoww_bot?start=pay">Оплатить через бота ⭐</a>
+        <a class="primary-button" id="billing-button" href="https://t.me/DelixorBot?start=pay">Оплатить через бота ⭐</a>
         <div class="billing-status" id="billing-status">
           <span class="billing-status__dot" aria-hidden="true"></span>
           <span id="billing-status-label">Подписка не активна</span>
@@ -1166,7 +1166,7 @@
       const updateBillingLink = () => {
         const selected = document.querySelector('input[name="plan"]:checked');
         const plan = selected?.value || "pay_month";
-        billingButton.href = `https://t.me/testing_lirikoww_bot?start=${plan}`;
+        billingButton.href = `https://t.me/DelixorBot?start=${plan}`;
       };
       document.querySelectorAll('input[name="plan"]').forEach((input) => {
         input.addEventListener("change", updateBillingLink);
@@ -1207,3 +1207,4 @@
   </script>
 </body>
 </html>
+
