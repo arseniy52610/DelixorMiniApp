@@ -71,6 +71,7 @@
         radial-gradient(120px 120px at 15% 25%, rgba(253, 185, 25, 0.16) 0, rgba(253, 185, 25, 0) 70%),
         radial-gradient(160px 160px at 85% 75%, rgba(120, 200, 255, 0.18) 0, rgba(120, 200, 255, 0) 70%);
       animation: star-float 18s ease-in-out infinite;
+      transition: transform 0.6s ease;
       opacity: 0.7;
       pointer-events: none;
     }
@@ -84,13 +85,13 @@
 
     @keyframes star-float {
       0% {
-        transform: translateY(0) scale(1);
+        transform: translate(var(--bg-shift-x, 0px), var(--bg-shift-y, 0px)) scale(1);
       }
       50% {
-        transform: translateY(-2%) scale(1.02);
+        transform: translate(var(--bg-shift-x, 0px), calc(var(--bg-shift-y, 0px) - 2%)) scale(1.02);
       }
       100% {
-        transform: translateY(0) scale(1);
+        transform: translate(var(--bg-shift-x, 0px), var(--bg-shift-y, 0px)) scale(1);
       }
     }
 
@@ -760,7 +761,7 @@
         </div>
         <div>
           <p class="hero__eyebrow">Delixor Mini‑app</p>
-          <h1>Панель управления Delixor v3.2</h1>
+          <h1>Панель управления Delixor v3.3</h1>
           <p class="hero__subtitle">Проверяйте статус, инструкции и подписку в одном месте.</p>
         </div>
       </header>
@@ -1085,6 +1086,50 @@
       });
     };
 
+    let bgShiftX = 0;
+    let bgShiftY = 0;
+    let targetShiftX = 0;
+    let targetShiftY = 0;
+    let bgShiftRaf = null;
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    const applyBackgroundShift = () => {
+      const ease = 0.08;
+      bgShiftX += (targetShiftX - bgShiftX) * ease;
+      bgShiftY += (targetShiftY - bgShiftY) * ease;
+      document.documentElement.style.setProperty("--bg-shift-x", `${bgShiftX.toFixed(2)}px`);
+      document.documentElement.style.setProperty("--bg-shift-y", `${bgShiftY.toFixed(2)}px`);
+      if (Math.abs(targetShiftX - bgShiftX) > 0.1 || Math.abs(targetShiftY - bgShiftY) > 0.1) {
+        bgShiftRaf = requestAnimationFrame(applyBackgroundShift);
+      } else {
+        bgShiftRaf = null;
+      }
+    };
+
+    const scheduleBackgroundShift = (shiftX, shiftY) => {
+      targetShiftX = shiftX;
+      targetShiftY = shiftY;
+      if (!bgShiftRaf) {
+        bgShiftRaf = requestAnimationFrame(applyBackgroundShift);
+      }
+    };
+
+    const updateBackgroundShift = () => {
+      const ratio = window.innerWidth / window.innerHeight;
+      const shift = clamp((ratio - 1) * 12, -12, 12);
+      scheduleBackgroundShift(shift, -shift / 2);
+    };
+
+    const handleDeviceOrientation = (event) => {
+      if (event.gamma === null || event.beta === null) {
+        return;
+      }
+      const shiftX = clamp((event.gamma / 45) * 12, -12, 12);
+      const shiftY = clamp((event.beta / 90) * 10, -10, 10);
+      scheduleBackgroundShift(shiftX, shiftY);
+    };
+
     const getViewFromHash = () => {
       const hash = window.location.hash.replace("#", "");
       if (!hash || hash === "home") {
@@ -1151,12 +1196,14 @@
     populateFromWebApp();
     populateFromParams();
     setupBilling();
+    updateBackgroundShift();
 
     setActiveView(getViewFromHash());
     window.addEventListener("hashchange", () => {
       setActiveView(getViewFromHash());
     });
+    window.addEventListener("resize", updateBackgroundShift);
+    window.addEventListener("deviceorientation", handleDeviceOrientation);
   </script>
 </body>
 </html>
-
