@@ -12,10 +12,14 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; background: #0A0F1F; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { margin: 0; padding: 0; background: #0A0F1F; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: background 0.3s, color 0.3s; }
+        body.light-theme { background: #F5F5F5; color: #1a1a1a; }
         body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 20% 0%, rgba(61, 90, 254, 0.25), transparent 50%), radial-gradient(circle at 80% 100%, rgba(168, 85, 247, 0.25), transparent 50%); pointer-events: none; }
+        body.light-theme::before { background: radial-gradient(circle at 20% 0%, rgba(61, 90, 254, 0.08), transparent 50%), radial-gradient(circle at 80% 100%, rgba(168, 85, 247, 0.08), transparent 50%); }
         .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; }
+        body.light-theme .glass { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.08); }
         .glass-strong { background: rgba(16,25,46,0.95); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.1); }
+        body.light-theme .glass-strong { background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.1); }
         .gradient-text { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #a855f7 100%); }
         .neon-glow { box-shadow: 0 0 30px rgba(124,77,255,0.5); }
@@ -24,12 +28,16 @@
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
         .slide-indicator { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .chat-item { transition: all 0.2s ease; }
+        .chat-item:active { transform: scale(0.98); }
+        .message-bubble { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         
         const API_BASE = "https://твой-бот.bothost.io";
         
@@ -50,8 +58,15 @@
         const api = {
             user: { get: () => request('/api/user') },
             subscription: { get: () => request('/api/subscription') },
-            chats: { list: () => request('/api/chats'), getHistory: (id) => request('/api/chat/' + encodeURIComponent(id)) },
-            settings: { get: () => request('/api/settings'), save: (data) => request('/api/settings', { method: 'POST', body: JSON.stringify(data) }) },
+            chats: { 
+                list: () => request('/api/chats'), 
+                getHistory: (id) => request('/api/chat/' + encodeURIComponent(id)),
+                delete: (id) => request('/api/chat/' + encodeURIComponent(id), { method: 'DELETE' })
+            },
+            settings: { 
+                get: () => request('/api/settings'), 
+                save: (data) => request('/api/settings', { method: 'POST', body: JSON.stringify(data) }) 
+            },
             giveaway: { get: () => request('/api/giveaway') },
             delpn: { get: () => request('/api/delpn') }
         };
@@ -67,11 +82,13 @@
                 settings: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
                 shield: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
                 lightning: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
-                party: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
                 diamond: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
-                close: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
                 menu: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>,
-                arrow: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                arrow: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
+                trash: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
+                send: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>,
+                back: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>,
+                search: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             };
             return icons[name] || null;
         }
@@ -83,9 +100,7 @@
                 { id: 'settings', icon: 'settings', label: 'Настройки' },
                 { id: 'delpn', icon: 'shield', label: 'DelPN' }
             ];
-            
             const activeIndex = tabs.findIndex(tab => tab.id === page);
-            
             return React.createElement('nav', { className: 'fixed bottom-0 left-0 right-0 px-3 pb-5 pt-2 z-50' },
                 React.createElement('div', { className: 'glass-strong rounded-[28px] px-2 py-2.5 flex justify-around items-center relative' },
                     React.createElement('div', { 
@@ -170,10 +185,10 @@
             return React.createElement('div', { className: 'px-4 pt-4 space-y-3 pb-32' },
                 React.createElement('div', { className: 'glass p-4 flex items-center justify-between' },
                     React.createElement('div', { className: 'flex items-center gap-3' },
-                        React.createElement('div', { className: 'w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-xl font-bold neon-glow' }, 'D'),
+                        React.createElement('div', { className: 'w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-xl font-bold neon-glow' }, name.charAt(0).toUpperCase()),
                         React.createElement('div', null,
-                            React.createElement('div', { className: 'font-semibold text-sm' }, '@Lirikawwwww'),
-                            React.createElement('div', { className: 'text-xs text-white/50' }, 'Lirikaw')
+                            React.createElement('div', { className: 'font-semibold text-sm' }, '@' + (username || 'username')),
+                            React.createElement('div', { className: 'text-xs text-white/50' }, name)
                         )
                     ),
                     React.createElement('div', { className: 'flex items-center gap-2' },
@@ -186,22 +201,20 @@
                         )
                     )
                 ),
-                
                 React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform' },
+                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform relative' },
                         React.createElement('div', { className: 'text-[#667eea] mb-2' }, Icon({ name: 'document', className: 'w-8 h-8' })),
                         React.createElement('div', { className: 'font-semibold text-sm mb-1' }, 'Инструкция'),
                         React.createElement('div', { className: 'text-xs text-white/50 leading-tight' }, 'Подключение бота по инструкции'),
                         React.createElement('div', { className: 'absolute top-4 right-4 text-white/30' }, Icon({ name: 'arrow', className: 'w-4 h-4' }))
                     ),
-                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform' },
+                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform relative' },
                         React.createElement('div', { className: 'text-[#a855f7] mb-2' }, Icon({ name: 'star', className: 'w-8 h-8' })),
                         React.createElement('div', { className: 'font-semibold text-sm mb-1' }, 'Возможности'),
                         React.createElement('div', { className: 'text-xs text-white/50 leading-tight' }, 'Что умеет бот'),
                         React.createElement('div', { className: 'absolute top-4 right-4 text-white/30' }, Icon({ name: 'arrow', className: 'w-4 h-4' }))
                     )
                 ),
-                
                 React.createElement('div', { className: 'glass gradient-bg p-5 relative overflow-hidden rocket-glow' },
                     React.createElement('div', { className: 'absolute right-0 top-0 w-32 h-32 opacity-80' }, RocketIllustration()),
                     React.createElement('div', { className: 'relative z-10 pr-32' },
@@ -213,7 +226,6 @@
                         Icon({ name: 'arrow', className: 'w-5 h-5 text-white/70' })
                     )
                 ),
-                
                 React.createElement('div', { className: 'glass p-4 flex items-center gap-4 cursor-pointer active:scale-95 transition-transform' },
                     React.createElement('div', { className: 'text-3xl' }, '🎉'),
                     React.createElement('div', { className: 'flex-1' },
@@ -222,22 +234,20 @@
                     ),
                     Icon({ name: 'arrow', className: 'w-5 h-5 text-white/30' })
                 ),
-                
                 React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform' },
+                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform relative' },
                         React.createElement('div', { className: 'text-[#a855f7] mb-2' }, Icon({ name: 'headphones', className: 'w-8 h-8' })),
                         React.createElement('div', { className: 'font-semibold text-sm mb-1' }, 'Поддержка'),
                         React.createElement('div', { className: 'text-xs text-white/50 leading-tight' }, 'Связаться с агентом поддержки'),
                         React.createElement('div', { className: 'absolute top-4 right-4 text-white/30' }, Icon({ name: 'arrow', className: 'w-4 h-4' }))
                     ),
-                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform' },
+                    React.createElement('div', { className: 'glass p-4 cursor-pointer active:scale-95 transition-transform relative' },
                         React.createElement('div', { className: 'text-[#667eea] mb-2' }, Icon({ name: 'megaphone', className: 'w-8 h-8' })),
                         React.createElement('div', { className: 'font-semibold text-sm mb-1' }, 'Канал'),
                         React.createElement('div', { className: 'text-xs text-white/50 leading-tight' }, 'Новости и обновления DelixorMod'),
                         React.createElement('div', { className: 'absolute top-4 right-4 text-white/30' }, Icon({ name: 'arrow', className: 'w-4 h-4' }))
                     )
                 ),
-                
                 React.createElement('div', { className: 'glass p-5 relative overflow-hidden' },
                     React.createElement('div', { className: 'absolute right-0 top-0 w-32 h-32 opacity-60' }, HoodedFigure()),
                     React.createElement('div', { className: 'flex items-center gap-4 relative z-10' },
@@ -256,52 +266,150 @@
             const [chats, setChats] = useState([]);
             const [selectedChat, setSelectedChat] = useState(null);
             const [messages, setMessages] = useState([]);
-            useEffect(() => { api.chats.list().then(setChats).catch(() => {}); }, []);
-            useEffect(() => { if (selectedChat) api.chats.getHistory(selectedChat).then(setMessages).catch(() => {}); }, [selectedChat]);
+            const [loading, setLoading] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+            const messagesEndRef = useRef(null);
+            
+            useEffect(() => {
+                setLoading(true);
+                api.chats.list().then(data => {
+                    setChats(Array.isArray(data) ? data : []);
+                    setLoading(false);
+                }).catch(() => setLoading(false));
+            }, []);
+            
+            useEffect(() => {
+                if (selectedChat) {
+                    setLoading(true);
+                    api.chats.getHistory(selectedChat).then(data => {
+                        setMessages(Array.isArray(data) ? data : []);
+                        setLoading(false);
+                        setTimeout(() => {
+                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                    }).catch(() => setLoading(false));
+                }
+            }, [selectedChat]);
+            
+            const filteredChats = chats.filter(chat => 
+                (chat.peer_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            
+            const formatTime = (dateStr) => {
+                if (!dateStr) return '';
+                const date = new Date(dateStr);
+                const now = new Date();
+                const diff = now - date;
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                if (days === 0) return date.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+                if (days === 1) return 'Вчера';
+                if (days < 7) return date.toLocaleDateString('ru', { weekday: 'short' });
+                return date.toLocaleDateString('ru', { day: '2-digit', month: '2-digit' });
+            };
+            
+            const getInitials = (name) => {
+                if (!name) return '?';
+                return name.charAt(0).toUpperCase();
+            };
+            
+            const getChatColor = (name) => {
+                const colors = [
+                    'from-purple-500 to-pink-500',
+                    'from-blue-500 to-cyan-500',
+                    'from-green-500 to-emerald-500',
+                    'from-orange-500 to-red-500',
+                    'from-indigo-500 to-purple-500'
+                ];
+                const index = (name || '').charCodeAt(0) % colors.length;
+                return colors[index];
+            };
             
             if (selectedChat) {
-                const peerName = messages[0] && messages[0].from_name || 'Чат';
+                const chat = chats.find(c => c.unique_chat_id === selectedChat);
+                const peerName = chat?.peer_name || 'Чат';
                 const tg = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user || {};
+                
                 return React.createElement('div', { className: 'h-full flex flex-col' },
                     React.createElement('div', { className: 'glass-strong px-4 py-3 flex items-center gap-3 sticky top-0 z-20' },
-                        React.createElement('button', { onClick: () => setSelectedChat(null), className: 'p-1' }, '←'),
-                        React.createElement('div', { className: 'w-10 h-10 rounded-full gradient-bg flex items-center justify-center font-bold' }, peerName.charAt(0)),
-                        React.createElement('div', { className: 'flex-1' },
-                            React.createElement('div', { className: 'font-semibold' }, peerName),
+                        React.createElement('button', { 
+                            onClick: () => { setSelectedChat(null); setMessages([]); }, 
+                            className: 'p-2 rounded-full hover:bg-white/10 transition-colors' 
+                        }, Icon({ name: 'back', className: 'w-5 h-5' })),
+                        React.createElement('div', { className: `w-10 h-10 rounded-full bg-gradient-to-br ${getChatColor(peerName)} flex items-center justify-center font-bold text-sm` }, getInitials(peerName)),
+                        React.createElement('div', { className: 'flex-1 min-w-0' },
+                            React.createElement('div', { className: 'font-semibold text-sm truncate' }, peerName),
                             React.createElement('div', { className: 'text-xs text-white/50' }, messages.length + ' сообщений')
                         )
                     ),
                     React.createElement('div', { className: 'flex-1 overflow-y-auto px-4 py-4 space-y-2' },
-                        messages.map(msg => React.createElement('div', {
-                            key: msg.message_id,
-                            className: 'flex ' + (msg.from_user_id === tg.id ? 'justify-end' : 'justify-start')
-                        },
-                            React.createElement('div', {
-                                className: 'max-w-[75%] px-4 py-2.5 rounded-[22px] text-sm ' + (msg.from_user_id === tg.id ? 'gradient-bg' : 'glass')
+                        loading && messages.length === 0 ? 
+                            React.createElement('div', { className: 'flex justify-center py-8' },
+                                React.createElement('div', { className: 'w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin' })
+                            ) :
+                        messages.length === 0 ?
+                            React.createElement('div', { className: 'text-center py-8 text-white/50 text-sm' }, 'Нет сообщений') :
+                        messages.map((msg, idx) => {
+                            const isMine = msg.from_user_id === tg.id;
+                            return React.createElement('div', {
+                                key: msg.message_id || idx,
+                                className: 'flex ' + (isMine ? 'justify-end' : 'justify-start') + ' message-bubble'
                             },
-                                msg.content || '[' + msg.content_type + ']',
-                                React.createElement('div', { className: 'text-[10px] mt-1 opacity-60' },
-                                    new Date(msg.created_at).toLocaleTimeString('ru', {hour:'2-digit',minute:'2-digit'})
+                                React.createElement('div', {
+                                    className: 'max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ' + 
+                                        (isMine ? 'gradient-bg text-white' : 'glass') +
+                                        (isMine ? ' rounded-br-md' : ' rounded-bl-md')
+                                },
+                                    React.createElement('div', null, msg.content || '[' + (msg.content_type || 'text') + ']'),
+                                    React.createElement('div', { className: 'text-[10px] mt-1 ' + (isMine ? 'text-white/70' : 'text-white/50') + ' text-right' },
+                                        formatTime(msg.created_at)
+                                    )
                                 )
-                            )
-                        ))
+                            );
+                        }),
+                        React.createElement('div', { ref: messagesEndRef })
                     )
                 );
             }
             
-            return React.createElement('div', { className: 'px-4 pt-6 pb-32' },
-                React.createElement('h1', { className: 'text-3xl font-bold mb-4 gradient-text' }, 'Чаты'),
+            return React.createElement('div', { className: 'px-4 pt-4 pb-32' },
+                React.createElement('h1', { className: 'text-3xl font-bold mb-4 gradient-text' }, 'Ваши чаты'),
+                React.createElement('div', { className: 'glass p-3 flex items-center gap-3 mb-4' },
+                    Icon({ name: 'search', className: 'w-5 h-5 text-white/50' }),
+                    React.createElement('input', {
+                        type: 'text',
+                        placeholder: 'Поиск чатов...',
+                        value: searchQuery,
+                        onChange: (e) => setSearchQuery(e.target.value),
+                        className: 'flex-1 bg-transparent outline-none text-sm placeholder-white/40'
+                    })
+                ),
+                loading ?
+                    React.createElement('div', { className: 'flex justify-center py-12' },
+                        React.createElement('div', { className: 'w-10 h-10 border-3 border-purple-500 border-t-transparent rounded-full animate-spin' })
+                    ) :
+                filteredChats.length === 0 ?
+                    React.createElement('div', { className: 'text-center py-12' },
+                        React.createElement('div', { className: 'text-5xl mb-3' }, ''),
+                        React.createElement('div', { className: 'text-white/60 text-sm' }, searchQuery ? 'Чаты не найдены' : 'У вас пока нет чатов'),
+                        React.createElement('div', { className: 'text-white/40 text-xs mt-1' }, 'Начните общение с ботом')
+                    ) :
                 React.createElement('div', { className: 'space-y-2' },
-                    chats.map(chat => React.createElement('div', {
+                    filteredChats.map(chat => React.createElement('div', {
                         key: chat.unique_chat_id,
                         onClick: () => setSelectedChat(chat.unique_chat_id),
-                        className: 'glass p-4 flex items-center gap-3 cursor-pointer'
+                        className: 'glass p-3 flex items-center gap-3 cursor-pointer chat-item'
                     },
-                        React.createElement('div', { className: 'w-12 h-12 rounded-full gradient-bg flex items-center justify-center font-bold' }, chat.peer_name.charAt(0)),
+                        React.createElement('div', { className: `w-12 h-12 rounded-full bg-gradient-to-br ${getChatColor(chat.peer_name)} flex items-center justify-center font-bold text-lg flex-shrink-0` }, getInitials(chat.peer_name)),
                         React.createElement('div', { className: 'flex-1 min-w-0' },
-                            React.createElement('div', { className: 'font-semibold truncate' }, chat.peer_name),
-                            React.createElement('div', { className: 'text-sm text-white/60 truncate' }, chat.last_message)
-                        )
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('div', { className: 'font-semibold text-sm truncate' }, chat.peer_name || 'Неизвестный чат'),
+                                React.createElement('div', { className: 'text-xs text-white/40 ml-2 flex-shrink-0' }, formatTime(chat.last_message_at))
+                            ),
+                            React.createElement('div', { className: 'text-xs text-white/50 truncate mt-0.5' }, chat.last_message || 'Нет сообщений')
+                        ),
+                        chat.unread_count > 0 ?
+                            React.createElement('div', { className: 'w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs font-bold flex-shrink-0' }, chat.unread_count) :
+                        null
                     ))
                 )
             );
@@ -309,26 +417,122 @@
         
         function SettingsPage() {
             const [settings, setSettings] = useState({ theme: 'dark', notifications: true, language: 'ru' });
-            useEffect(() => { api.settings.get().then(setSettings).catch(() => {}); }, []);
-            const update = (patch) => { const next = {...settings, ...patch}; setSettings(next); api.settings.save(next).catch(() => {}); };
-            return React.createElement('div', { className: 'px-4 pt-6 space-y-4 pb-32' },
+            const [saved, setSaved] = useState(false);
+            
+            useEffect(() => {
+                api.settings.get().then(data => {
+                    if (data) {
+                        setSettings(data);
+                        applyTheme(data.theme || 'dark');
+                    }
+                }).catch(() => {
+                    const saved = localStorage.getItem('delixor_settings');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        setSettings(parsed);
+                        applyTheme(parsed.theme || 'dark');
+                    }
+                });
+            }, []);
+            
+            const applyTheme = (theme) => {
+                if (theme === 'light') {
+                    document.body.classList.add('light-theme');
+                } else {
+                    document.body.classList.remove('light-theme');
+                }
+            };
+            
+            const update = (patch) => {
+                const next = { ...settings, ...patch };
+                setSettings(next);
+                applyTheme(next.theme);
+                localStorage.setItem('delixor_settings', JSON.stringify(next));
+                api.settings.save(next).then(() => {
+                    setSaved(true);
+                    setTimeout(() => setSaved(false), 1500);
+                }).catch(() => {});
+            };
+            
+            const isLight = settings.theme === 'light';
+            
+            return React.createElement('div', { className: 'px-4 pt-4 space-y-4 pb-32' },
                 React.createElement('h1', { className: 'text-3xl font-bold gradient-text' }, 'Настройки'),
+                saved && React.createElement('div', { className: 'fixed top-4 left-1/2 -translate-x-1/2 glass px-4 py-2 text-sm text-green-400 z-50' }, '✓ Сохранено'),
+                
                 React.createElement('div', { className: 'glass p-5' },
-                    React.createElement('div', { className: 'text-sm text-white/60 mb-3' }, 'Тема'),
+                    React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                        React.createElement('div', null,
+                            React.createElement('div', { className: 'font-semibold text-sm' }, 'Тема оформления'),
+                            React.createElement('div', { className: 'text-xs text-white/50 mt-0.5' }, 'Выберите внешний вид приложения')
+                        ),
+                        React.createElement('div', { className: 'flex items-center gap-2 text-xs' },
+                            React.createElement('span', { className: !isLight ? 'text-white' : 'text-white/50' }, '🌙'),
+                            React.createElement('span', { className: isLight ? 'text-white' : 'text-white/50' }, '️')
+                        )
+                    ),
                     React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
-                        React.createElement('button', { onClick: () => update({theme:'dark'}), className: 'py-3 rounded-2xl ' + (settings.theme==='dark'?'gradient-bg':'bg-white/5') }, 'Тёмная'),
-                        React.createElement('button', { onClick: () => update({theme:'light'}), className: 'py-3 rounded-2xl ' + (settings.theme==='light'?'gradient-bg':'bg-white/5') }, 'Светлая')
+                        React.createElement('button', { 
+                            onClick: () => update({ theme: 'dark' }), 
+                            className: 'py-3 rounded-2xl transition-all ' + (!isLight ? 'gradient-bg text-white shadow-lg' : 'bg-white/5 text-white/70') 
+                        }, 
+                            React.createElement('div', { className: 'flex flex-col items-center gap-1' },
+                                React.createElement('span', { className: 'text-xl' }, ''),
+                                React.createElement('span', { className: 'text-sm font-medium' }, 'Тёмная')
+                            )
+                        ),
+                        React.createElement('button', { 
+                            onClick: () => update({ theme: 'light' }), 
+                            className: 'py-3 rounded-2xl transition-all ' + (isLight ? 'gradient-bg text-white shadow-lg' : 'bg-white/5 text-white/70') 
+                        }, 
+                            React.createElement('div', { className: 'flex flex-col items-center gap-1' },
+                                React.createElement('span', { className: 'text-xl' }, '☀️'),
+                                React.createElement('span', { className: 'text-sm font-medium' }, 'Светлая')
+                            )
+                        )
                     )
                 ),
+                
                 React.createElement('div', { className: 'glass p-5 flex items-center justify-between' },
-                    React.createElement('span', null, 'Уведомления'),
+                    React.createElement('div', null,
+                        React.createElement('div', { className: 'font-semibold text-sm' }, 'Уведомления'),
+                        React.createElement('div', { className: 'text-xs text-white/50 mt-0.5' }, 'Получать уведомления о новых сообщениях')
+                    ),
                     React.createElement('button', {
-                        onClick: () => update({notifications:!settings.notifications}),
-                        className: 'w-12 h-7 rounded-full relative ' + (settings.notifications?'gradient-bg':'bg-white/10')
-                    }, React.createElement('div', { className: 'absolute top-0.5 w-6 h-6 rounded-full bg-white transition-all ' + (settings.notifications?'left-5':'left-0.5') }))
+                        onClick: () => update({ notifications: !settings.notifications }),
+                        className: 'w-14 h-8 rounded-full relative transition-colors ' + (settings.notifications ? 'gradient-bg' : 'bg-white/10')
+                    }, 
+                        React.createElement('div', { 
+                            className: 'absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300 ' + (settings.notifications ? 'left-7' : 'left-1') 
+                        })
+                    )
                 ),
-                React.createElement('div', { className: 'glass p-5', onClick: () => { if(confirm('Очистить историю?')) alert('История очищена'); } },
-                    React.createElement('div', { className: 'text-red-400' }, 'Очистить историю чатов')
+                
+                React.createElement('div', { className: 'glass p-5' },
+                    React.createElement('div', { className: 'font-semibold text-sm mb-3' }, 'Язык'),
+                    React.createElement('div', { className: 'grid grid-cols-2 gap-2' },
+                        React.createElement('button', { 
+                            onClick: () => update({ language: 'ru' }), 
+                            className: 'py-3 rounded-2xl transition-all ' + (settings.language === 'ru' ? 'gradient-bg text-white shadow-lg' : 'bg-white/5 text-white/70') 
+                        }, '🇷🇺 Русский'),
+                        React.createElement('button', { 
+                            onClick: () => update({ language: 'en' }), 
+                            className: 'py-3 rounded-2xl transition-all ' + (settings.language === 'en' ? 'gradient-bg text-white shadow-lg' : 'bg-white/5 text-white/70') 
+                        }, '🇬🇧 English')
+                    )
+                ),
+                
+                React.createElement('div', { className: 'glass p-5' },
+                    React.createElement('div', { className: 'font-semibold text-sm mb-1' }, 'О приложении'),
+                    React.createElement('div', { className: 'text-xs text-white/50' }, 'DelixorMod v1.0.0'),
+                    React.createElement('div', { className: 'text-xs text-white/40 mt-1' }, '© 2026 DelixorMod. Все права защищены.')
+                ),
+                
+                React.createElement('div', { className: 'glass p-5 cursor-pointer active:scale-95 transition-transform', onClick: () => { if(confirm('Очистить историю чатов? Это действие нельзя отменить.')) alert('История очищена'); } },
+                    React.createElement('div', { className: 'flex items-center gap-3' },
+                        React.createElement('div', { className: 'text-red-400' }, Icon({ name: 'trash', className: 'w-5 h-5' })),
+                        React.createElement('div', { className: 'text-red-400 font-medium text-sm' }, 'Очистить историю чатов')
+                    )
                 )
             );
         }
@@ -336,23 +540,23 @@
         function DelPNPage() {
             const [data, setData] = useState(null);
             useEffect(() => { api.delpn.get().then(setData).catch(() => {}); }, []);
-            return React.createElement('div', { className: 'px-4 pt-6 space-y-4 pb-32' },
+            return React.createElement('div', { className: 'px-4 pt-4 space-y-4 pb-32' },
                 React.createElement('div', { className: 'glass p-6 relative overflow-hidden' },
                     React.createElement('div', { className: 'relative' },
                         React.createElement('div', { className: 'w-16 h-16 rounded-3xl gradient-bg flex items-center justify-center mb-4 neon-glow text-3xl' }, '🛡️'),
                         React.createElement('h1', { className: 'text-3xl font-bold gradient-text' }, 'DelPN'),
-                        React.createElement('p', { className: 'text-white/70 mt-2' }, data && data.description || 'Защищённый VPN'),
-                        React.createElement('div', { className: 'mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ' + (data && data.is_connected?'bg-green-500/20 text-green-400':'bg-white/10') },
-                            React.createElement('div', { className: 'w-2 h-2 rounded-full ' + (data && data.is_connected?'bg-green-400':'bg-white/40') }),
+                        React.createElement('p', { className: 'text-white/70 mt-2 text-sm' }, data && data.description || 'Защищённый VPN для безопасного интернета'),
+                        React.createElement('div', { className: 'mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ' + (data && data.is_connected ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/60') },
+                            React.createElement('div', { className: 'w-2 h-2 rounded-full ' + (data && data.is_connected ? 'bg-green-400' : 'bg-white/40') }),
                             React.createElement('span', null, data && data.status || 'Не подключено')
                         )
                     )
                 ),
                 React.createElement('div', { className: 'glass p-5' },
-                    React.createElement('div', { className: 'text-sm text-white/60 mb-3' }, 'Возможности'),
-                    React.createElement('div', { className: 'space-y-2' },
-                        data && data.features && data.features.map((f,i) => React.createElement('div', { key: i, className: 'flex items-center gap-2' },
-                            React.createElement('div', { className: 'w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs' }, '✓'),
+                    React.createElement('div', { className: 'text-sm text-white/60 mb-3 font-semibold' }, 'Возможности'),
+                    React.createElement('div', { className: 'space-y-3' },
+                        (data && data.features || ['Шифрование трафика', 'Анонимность в сети', 'Обход блокировок', 'Высокая скорость']).map((f, i) => React.createElement('div', { key: i, className: 'flex items-center gap-3' },
+                            React.createElement('div', { className: 'w-6 h-6 rounded-full gradient-bg flex items-center justify-center text-xs flex-shrink-0' }, '✓'),
                             React.createElement('span', { className: 'text-sm' }, f)
                         ))
                     )
@@ -363,8 +567,8 @@
                         React.createElement('div', { className: 'text-2xl font-bold' }, data && data.tariff || '299 руб/мес')
                     ),
                     React.createElement('button', {
-                        onClick: () => { if(data && data.connect_url) window.open(data.connect_url); },
-                        className: 'bg-white text-[#7C4DFF] px-6 py-3 rounded-2xl font-semibold'
+                        onClick: () => { if (data && data.connect_url) window.open(data.connect_url); },
+                        className: 'bg-white text-[#7C4DFF] px-6 py-3 rounded-2xl font-semibold text-sm'
                     }, 'Подключить')
                 )
             );
@@ -377,8 +581,15 @@
                     window.Telegram.WebApp.ready();
                     window.Telegram.WebApp.expand();
                 }
+                const saved = localStorage.getItem('delixor_settings');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.theme === 'light') {
+                        document.body.classList.add('light-theme');
+                    }
+                }
             }, []);
-            return React.createElement('div', { className: 'h-screen w-full overflow-hidden relative bg-[#0A0F1F]' },
+            return React.createElement('div', { className: 'h-screen w-full overflow-hidden relative' },
                 React.createElement('main', { className: 'h-full w-full overflow-y-auto overflow-x-hidden' },
                     page === 'menu' && React.createElement(MenuPage),
                     page === 'chats' && React.createElement(ChatsPage),
