@@ -15,7 +15,7 @@
         body { margin: 0; padding: 0; background: #0A0F1F; color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; }
         body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 20% 0%, rgba(61, 90, 254, 0.25), transparent 50%), radial-gradient(circle at 80% 100%, rgba(168, 85, 247, 0.25), transparent 50%); pointer-events: none; }
         .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; }
-        .glass-strong { background: rgba(16,25,46,0.7); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.1); }
+        .glass-strong { background: rgba(16,25,46,0.95); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.1); }
         .gradient-text { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #a855f7 100%); }
         .neon-glow { box-shadow: 0 0 30px rgba(124,77,255,0.5); }
@@ -23,12 +23,13 @@
         ::-webkit-scrollbar { display: none; }
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
+        .slide-indicator { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         
         const API_BASE = "https://твой-бот.bothost.io";
         
@@ -82,19 +83,30 @@
                 { id: 'settings', icon: 'settings', label: 'Настройки' },
                 { id: 'delpn', icon: 'shield', label: 'DelPN' }
             ];
-            return React.createElement('nav', { className: 'fixed bottom-0 left-0 right-0 px-4 pb-5 pt-2 z-50' },
-                React.createElement('div', { className: 'glass-strong rounded-[28px] px-2 py-3 flex justify-around items-center neon-glow' },
-                    tabs.map(tab => React.createElement('button', {
+            
+            const activeIndex = tabs.findIndex(tab => tab.id === page);
+            
+            return React.createElement('nav', { className: 'fixed bottom-0 left-0 right-0 px-2 pb-4 pt-2 z-50' },
+                React.createElement('div', { className: 'glass-strong rounded-[24px] px-1 py-2 flex justify-around items-center relative' },
+                    React.createElement('div', { 
+                        className: 'absolute slide-indicator gradient-bg rounded-xl opacity-90',
+                        style: {
+                            width: 'calc(25% - 8px)',
+                            height: '44px',
+                            left: `${activeIndex * 25 + 2}%`,
+                            top: '4px',
+                            boxShadow: '0 4px 20px rgba(168, 85, 247, 0.5)'
+                        }
+                    }),
+                    tabs.map((tab, index) => React.createElement('button', {
                         key: tab.id,
                         onClick: () => setPage(tab.id),
-                        className: 'flex flex-col items-center px-4 py-1 transition-all ' + (page === tab.id ? 'scale-110' : 'opacity-60')
+                        className: 'flex flex-col items-center justify-center w-[25%] py-2 relative z-10 transition-all duration-300'
                     },
-                        React.createElement('div', { className: (page === tab.id ? 'text-[#a855f7]' : 'text-white/60') + ' ' + (page === tab.id ? 'neon-glow' : '') },
-                            React.createElement('div', { className: page === tab.id ? 'gradient-bg rounded-full p-1.5' : '' },
-                                Icon({ name: tab.icon, className: 'w-6 h-6' })
-                            )
+                        React.createElement('div', { className: (page === tab.id ? 'text-white' : 'text-white/60') + ' transition-colors duration-300' },
+                            Icon({ name: tab.icon, className: 'w-6 h-6' })
                         ),
-                        React.createElement('span', { className: 'text-[11px] mt-1 ' + (page === tab.id ? 'text-[#a855f7] font-semibold' : 'text-white/50') }, tab.label)
+                        React.createElement('span', { className: 'text-[10px] mt-0.5 ' + (page === tab.id ? 'text-white font-medium' : 'text-white/50') }, tab.label)
                     ))
                 )
             );
@@ -154,18 +166,7 @@
             const name = tg.first_name || user && user.first_name || 'Гость';
             const username = tg.username || user && user.username;
             
-            return React.createElement('div', { className: 'px-4 pt-4 space-y-3 pb-24' },
-                React.createElement('div', { className: 'flex items-center justify-between mb-2' },
-                    React.createElement('button', { className: 'text-white/70 text-sm' }, 'Закрыть'),
-                    React.createElement('div', { className: 'text-center' },
-                        React.createElement('h1', { className: 'text-2xl font-bold gradient-text' }, 'DelixorMod'),
-                        React.createElement('p', { className: 'text-xs text-white/50' }, 'мини-приложение')
-                    ),
-                    React.createElement('button', { className: 'w-8 h-8 rounded-full bg-white/5 flex items-center justify-center' },
-                        Icon({ name: 'menu', className: 'w-5 h-5 text-white/70' })
-                    )
-                ),
-                
+            return React.createElement('div', { className: 'px-4 pt-4 space-y-3 pb-28' },
                 React.createElement('div', { className: 'glass p-4 flex items-center justify-between' },
                     React.createElement('div', { className: 'flex items-center gap-3' },
                         React.createElement('div', { className: 'w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-xl font-bold neon-glow' }, 'D'),
@@ -287,7 +288,7 @@
                 );
             }
             
-            return React.createElement('div', { className: 'px-4 pt-6' },
+            return React.createElement('div', { className: 'px-4 pt-6 pb-28' },
                 React.createElement('h1', { className: 'text-3xl font-bold mb-4 gradient-text' }, 'Чаты'),
                 React.createElement('div', { className: 'space-y-2' },
                     chats.map(chat => React.createElement('div', {
@@ -309,7 +310,7 @@
             const [settings, setSettings] = useState({ theme: 'dark', notifications: true, language: 'ru' });
             useEffect(() => { api.settings.get().then(setSettings).catch(() => {}); }, []);
             const update = (patch) => { const next = {...settings, ...patch}; setSettings(next); api.settings.save(next).catch(() => {}); };
-            return React.createElement('div', { className: 'px-4 pt-6 space-y-4' },
+            return React.createElement('div', { className: 'px-4 pt-6 space-y-4 pb-28' },
                 React.createElement('h1', { className: 'text-3xl font-bold gradient-text' }, 'Настройки'),
                 React.createElement('div', { className: 'glass p-5' },
                     React.createElement('div', { className: 'text-sm text-white/60 mb-3' }, 'Тема'),
@@ -334,7 +335,7 @@
         function DelPNPage() {
             const [data, setData] = useState(null);
             useEffect(() => { api.delpn.get().then(setData).catch(() => {}); }, []);
-            return React.createElement('div', { className: 'px-4 pt-6 space-y-4' },
+            return React.createElement('div', { className: 'px-4 pt-6 space-y-4 pb-28' },
                 React.createElement('div', { className: 'glass p-6 relative overflow-hidden' },
                     React.createElement('div', { className: 'relative' },
                         React.createElement('div', { className: 'w-16 h-16 rounded-3xl gradient-bg flex items-center justify-center mb-4 neon-glow text-3xl' }, '🛡️'),
@@ -374,7 +375,6 @@
                 if (window.Telegram && window.Telegram.WebApp) {
                     window.Telegram.WebApp.ready();
                     window.Telegram.WebApp.expand();
-                    window.Telegram.WebApp.setHeaderColor('#0A0F1F');
                 }
             }, []);
             return React.createElement('div', { className: 'h-full w-full overflow-hidden relative bg-[#0A0F1F]' },
