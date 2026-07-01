@@ -95,6 +95,19 @@
         body.light-theme .image-path-input {
             background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); color: #1a1a1a;
         }
+        .plan-card { transition: all 0.3s ease; }
+        .plan-card.selected { 
+            border: 2px solid #a855f7 !important; 
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+        .plan-popular {
+            position: absolute; top: -8px; right: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #a855f7 100%);
+            padding: 4px 12px; border-radius: 12px;
+            font-size: 10px; font-weight: 600;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
     </style>
 </head>
 <body>
@@ -102,7 +115,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        const API_BASE = "https://bot-1782782304-4136-bynexadmin.bothost.tech/";
+        const API_BASE = "https://bot-1782782304-4136-bynexadmin.bothost.tech";
         
         async function request(endpoint, options = {}) {
             const tg = window.Telegram && window.Telegram.WebApp;
@@ -114,7 +127,10 @@
                     ...options.headers 
                 }
             });
-            if (!res.ok) throw new Error('API error: ' + res.status);
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(error.error || 'API error: ' + res.status);
+            }
             return res.json();
         }
         
@@ -126,7 +142,9 @@
                 save: (data) => request('/api/settings', { method: 'POST', body: JSON.stringify(data) }) 
             },
             giveaway: { get: () => request('/api/giveaway') },
-            delpn: { get: () => request('/api/delpn') }
+            delpn: { get: () => request('/api/delpn') },
+            chats: { get: () => request('/api/chats') },
+            payment: { create: (plan) => request('/api/payment/create', { method: 'POST', body: JSON.stringify({ plan }) }) }
         };
         
         function Icon({ name, className = "w-6 h-6" }) {
@@ -142,7 +160,8 @@
                 diamond: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
                 arrow: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
                 close: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
-                check: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                check: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+                chat: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
             };
             return icons[name] || null;
         }
@@ -150,6 +169,7 @@
         function BottomNav({ page, setPage }) {
             const tabs = [
                 { id: 'menu', icon: 'home', label: 'Меню' },
+                { id: 'chats', icon: 'chat', label: 'Чаты' },
                 { id: 'settings', icon: 'settings', label: 'Настройки' },
                 { id: 'delpn', icon: 'shield', label: 'DelPN' }
             ];
@@ -159,9 +179,9 @@
                     React.createElement('div', { 
                         className: 'absolute slide-indicator gradient-bg rounded-2xl',
                         style: {
-                            width: 'calc(33.33% - 12px)',
+                            width: 'calc(25% - 12px)',
                             height: '48px',
-                            left: `calc(${activeIndex * 33.33}% + 6px)`,
+                            left: `calc(${activeIndex * 25}% + 6px)`,
                             top: '50%',
                             transform: 'translateY(-50%)',
                             boxShadow: '0 4px 20px rgba(168, 85, 247, 0.6)'
@@ -170,7 +190,7 @@
                     tabs.map((tab) => React.createElement('button', {
                         key: tab.id,
                         onClick: () => setPage(tab.id),
-                        className: 'flex flex-col items-center justify-center w-[33.33%] py-2 relative z-10 transition-all duration-300'
+                        className: 'flex flex-col items-center justify-center w-[25%] py-2 relative z-10 transition-all duration-300'
                     },
                         React.createElement('div', { className: (page === tab.id ? 'text-white' : 'text-white/60') + ' transition-colors duration-300' },
                             Icon({ name: tab.icon, className: 'w-6 h-6' })
@@ -181,13 +201,101 @@
             );
         }
         
+        function PaymentModal({ onClose }) {
+            const [selectedPlan, setSelectedPlan] = useState(null);
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState(null);
+            
+            const plans = [
+                { id: 'month', name: 'Месяц', price: '199 ₽', duration: '30 дней', popular: false },
+                { id: 'quarter', name: '3 месяца', price: '399 ₽', duration: '90 дней', popular: true },
+                { id: 'year', name: 'Год', price: '599 ₽', duration: '365 дней', popular: false }
+            ];
+            
+            const handlePay = async () => {
+                if (!selectedPlan) {
+                    setError('Выберите тариф');
+                    return;
+                }
+                
+                setIsLoading(true);
+                setError(null);
+                
+                try {
+                    const response = await api.payment.create(selectedPlan);
+                    
+                    if (response.success && response.payment_url) {
+                        // Открываем ссылку на оплату
+                        window.open(response.payment_url, '_blank');
+                        
+                        // Закрываем мини-апп
+                        setTimeout(() => {
+                            if (window.Telegram && window.Telegram.WebApp) {
+                                window.Telegram.WebApp.close();
+                            }
+                        }, 500);
+                    } else {
+                        setError(response.error || 'Ошибка при создании платежа');
+                    }
+                } catch (err) {
+                    console.error('Payment error:', err);
+                    setError(err.message || 'Ошибка при оплате');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            return React.createElement('div', { className: 'modal-overlay' },
+                React.createElement('div', { className: 'modal-content' },
+                    React.createElement('button', { 
+                        onClick: onClose,
+                        className: 'self-end mb-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors'
+                    }, Icon({ name: 'close', className: 'w-6 h-6 text-white' })),
+                    
+                    React.createElement('h2', { className: 'text-2xl font-bold gradient-text mb-2 text-center' }, 'Delixor Plus'),
+                    React.createElement('p', { className: 'text-white/70 text-sm text-center mb-6' }, 'Выберите подходящий тариф'),
+                    
+                    React.createElement('div', { className: 'space-y-3 mb-6' },
+                        plans.map(plan => React.createElement('div', {
+                            key: plan.id,
+                            onClick: () => setSelectedPlan(plan.id),
+                            className: 'glass p-4 cursor-pointer plan-card relative ' + 
+                                (selectedPlan === plan.id ? 'selected' : '')
+                        },
+                            plan.popular && React.createElement('div', { className: 'plan-popular' }, 'Популярный'),
+                            React.createElement('div', { className: 'flex justify-between items-center' },
+                                React.createElement('div', null,
+                                    React.createElement('div', { className: 'font-semibold text-base' }, plan.name),
+                                    React.createElement('div', { className: 'text-xs text-white/50 mt-1' }, plan.duration)
+                                ),
+                                React.createElement('div', { className: 'text-xl font-bold gradient-text' }, plan.price)
+                            ),
+                            selectedPlan === plan.id && React.createElement('div', { 
+                                className: 'absolute top-4 right-4 text-[#a855f7]' 
+                            }, Icon({ name: 'check', className: 'w-5 h-5' }))
+                        ))
+                    ),
+                    
+                    error && React.createElement('div', { className: 'mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-sm' }, error),
+                    
+                    React.createElement('button', {
+                        onClick: handlePay,
+                        disabled: !selectedPlan || isLoading,
+                        className: 'w-full gradient-bg text-white font-semibold py-4 rounded-2xl text-base shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+                    }, 
+                        isLoading ? React.createElement('div', { className: 'w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin' }) : null,
+                        isLoading ? 'Создаем платеж...' : 'Оплатить'
+                    )
+                )
+            );
+        }
+        
         function InstructionModal({ onClose }) {
             const [step, setStep] = useState(0);
-            // Пути к изображениям - укажите свои пути здесь
             const imagePaths = [
-                "https://i.ibb.co/k66CRtLd/1.png",  // Шаг 1
-                "https://i.ibb.co/GvrRHfDW/2.png",  // Шаг 2
-                "https://i.ibb.co/LDfQkczn/image.png"   // Шаг 3
+                "https://i.ibb.co/k66CRtLd/1.png",
+                "https://i.ibb.co/GvrRHfDW/2.png",
+                "https://i.ibb.co/LDfQkczn/image.png"
             ];
             
             const steps = [
@@ -247,7 +355,7 @@
                                 }
                             },
                             className: 'w-full gradient-bg text-white font-semibold py-4 rounded-2xl text-base shadow-lg hover:shadow-xl transition-all active:scale-95'
-                        }, isLastStep ? 'Изучил! ' : 'Продолжить')
+                        }, isLastStep ? 'Начать использование' : 'Продолжить')
                     )
                 )
             );
@@ -296,7 +404,7 @@
             );
         }
         
-        function MenuPage({ onOpenInstruction }) {
+        function MenuPage({ onOpenInstruction, onOpenPayment }) {
             const [user, setUser] = useState(null);
             const [sub, setSub] = useState(null);
             
@@ -309,6 +417,8 @@
             const name = tg.first_name || user && user.first_name || 'Гость';
             const username = tg.username || user && user.username;
             
+            const isActive = sub && sub.is_active;
+            
             return React.createElement('div', { className: 'px-4 pt-4 space-y-3 pb-32' },
                 React.createElement('div', { className: 'glass p-4 flex items-center justify-between' },
                     React.createElement('div', { className: 'flex items-center gap-3' },
@@ -319,9 +429,9 @@
                         )
                     ),
                     React.createElement('div', { className: 'flex items-center gap-2' },
-                        React.createElement('div', { className: 'flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20' },
-                            React.createElement('div', { className: 'w-2 h-2 rounded-full bg-green-400' }),
-                            React.createElement('span', { className: 'text-xs text-green-400' }, 'Активная подписка')
+                        React.createElement('div', { className: 'flex items-center gap-1.5 px-3 py-1.5 rounded-full ' + (isActive ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20') },
+                            React.createElement('div', { className: 'w-2 h-2 rounded-full ' + (isActive ? 'bg-green-400' : 'bg-red-400') }),
+                            React.createElement('span', { className: 'text-xs ' + (isActive ? 'text-green-400' : 'text-red-400') }, isActive ? `Активна ${sub.days_left}д` : 'Не активна')
                         ),
                         React.createElement('div', { className: 'w-10 h-10 rounded-full bg-white/5 flex items-center justify-center' },
                             Icon({ name: 'diamond', className: 'w-5 h-5 text-[#a855f7]' })
@@ -347,12 +457,17 @@
                     )
                 ),
                 
-                React.createElement('div', { className: 'glass gradient-bg p-5 relative overflow-hidden rocket-glow' },
+                React.createElement('div', { 
+                    className: 'glass gradient-bg p-5 relative overflow-hidden rocket-glow cursor-pointer',
+                    onClick: isActive ? null : onOpenPayment
+                },
                     React.createElement('div', { className: 'absolute right-0 top-0 w-32 h-32 opacity-80' }, RocketIllustration()),
                     React.createElement('div', { className: 'relative z-10 pr-32' },
                         React.createElement('div', { className: 'text-sm text-white/80 mb-1' }, 'Подписка'),
                         React.createElement('div', { className: 'text-xl font-bold mb-2' }, 'DelixorMod Plus'),
-                        React.createElement('div', { className: 'text-xs text-white/70' }, 'Больше функций и приоритетная поддержка')
+                        React.createElement('div', { className: 'text-xs text-white/70' }, 
+                            isActive ? `Активна ещё ${sub.days_left} дн.` : 'Больше функций и приоритетная поддержка'
+                        )
                     ),
                     React.createElement('div', { className: 'absolute right-4 top-1/2 -translate-y-1/2' },
                         Icon({ name: 'arrow', className: 'w-5 h-5 text-white/70' })
@@ -394,6 +509,70 @@
                         Icon({ name: 'arrow', className: 'w-5 h-5 text-white/30' })
                     )
                 )
+            );
+        }
+        
+        function ChatsPage() {
+            const [chats, setChats] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [sub, setSub] = useState(null);
+            
+            useEffect(() => {
+                api.subscription.get().then(data => {
+                    setSub(data);
+                    if (data && data.is_active) {
+                        api.chats.get().then(setChats).catch(() => {}).finally(() => setLoading(false));
+                    } else {
+                        setLoading(false);
+                    }
+                }).catch(() => setLoading(false));
+            }, []);
+            
+            if (!sub || !sub.is_active) {
+                return React.createElement('div', { className: 'px-4 pt-4 flex flex-col items-center justify-center h-full pb-32' },
+                    React.createElement('div', { className: 'text-6xl mb-4' }, '🔒'),
+                    React.createElement('h2', { className: 'text-xl font-bold mb-2 text-center' }, 'Доступ ограничен'),
+                    React.createElement('p', { className: 'text-white/70 text-center text-sm mb-6' }, 
+                        'Этот раздел доступен только пользователям с активной подпиской Delixor Plus'
+                    )
+                );
+            }
+            
+            if (loading) {
+                return React.createElement('div', { className: 'px-4 pt-4 flex items-center justify-center h-full pb-32' },
+                    React.createElement('div', { className: 'w-12 h-12 border-4 border-[#a855f7]/30 border-t-[#a855f7] rounded-full animate-spin' })
+                );
+            }
+            
+            if (chats.length === 0) {
+                return React.createElement('div', { className: 'px-4 pt-4 flex flex-col items-center justify-center h-full pb-32' },
+                    React.createElement('div', { className: 'text-6xl mb-4' }, '💬'),
+                    React.createElement('h2', { className: 'text-xl font-bold mb-2' }, 'Нет чатов'),
+                    React.createElement('p', { className: 'text-white/70 text-center text-sm' }, 
+                        'Здесь будут отображаться ваши сохраненные чаты'
+                    )
+                );
+            }
+            
+            return React.createElement('div', { className: 'px-4 pt-4 space-y-3 pb-32' },
+                React.createElement('h1', { className: 'text-3xl font-bold gradient-text mb-4' }, 'Ваши чаты'),
+                chats.map(chat => React.createElement('div', {
+                    key: chat.unique_chat_id,
+                    className: 'glass p-4 cursor-pointer instruction-card'
+                },
+                    React.createElement('div', { className: 'flex items-center gap-3' },
+                        React.createElement('div', { className: 'w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-lg font-bold flex-shrink-0' }, 
+                            chat.peer_name.charAt(0).toUpperCase()
+                        ),
+                        React.createElement('div', { className: 'flex-1 min-w-0' },
+                            React.createElement('div', { className: 'font-semibold text-sm truncate' }, chat.peer_name),
+                            React.createElement('div', { className: 'text-xs text-white/50 mt-1 truncate' }, chat.last_message || 'Нет сообщений')
+                        ),
+                        React.createElement('div', { className: 'text-xs text-white/40 flex-shrink-0' }, 
+                            chat.last_message_at ? new Date(chat.last_message_at).toLocaleDateString('ru-RU') : ''
+                        )
+                    )
+                ))
             );
         }
         
@@ -552,6 +731,7 @@
         function App() {
             const [page, setPage] = useState('menu');
             const [showInstruction, setShowInstruction] = useState(false);
+            const [showPayment, setShowPayment] = useState(false);
             
             useEffect(() => {
                 if (window.Telegram && window.Telegram.WebApp) {
@@ -569,11 +749,16 @@
             
             return React.createElement('div', { className: 'h-screen w-full overflow-hidden relative' },
                 React.createElement('main', { className: 'h-full w-full overflow-y-auto overflow-x-hidden' },
-                    page === 'menu' && React.createElement(MenuPage, { onOpenInstruction: () => setShowInstruction(true) }),
+                    page === 'menu' && React.createElement(MenuPage, { 
+                        onOpenInstruction: () => setShowInstruction(true),
+                        onOpenPayment: () => setShowPayment(true)
+                    }),
+                    page === 'chats' && React.createElement(ChatsPage),
                     page === 'settings' && React.createElement(SettingsPage),
                     page === 'delpn' && React.createElement(DelPNPage)
                 ),
                 showInstruction && React.createElement(InstructionModal, { onClose: () => setShowInstruction(false) }),
+                showPayment && React.createElement(PaymentModal, { onClose: () => setShowPayment(false) }),
                 React.createElement(BottomNav, { page: page, setPage: setPage })
             );
         }
